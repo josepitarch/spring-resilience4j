@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: spring-resilience4j
+resilience4j:
+  retry:
+    instances:
+      example-retry:
+        max-attempts: 7
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        exponential-max-wait-duration: 5s
+        retry-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException
+  circuitbreaker:
+    configs:
+      default:
+        wait-duration-in-open-state: 10s # Espera 10 segundos antes de intentar cerrar el circuito
+        permitted-number-of-calls-in-half-open-state: 2 # Número de llamadas de prueba en estado HALF_OPEN
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - java.lang.NumberFormatException
+    instances:
+      circuit-breaker-time:
+        base-config: default
+        sliding-window-type: TIME_BASED       # Ventana basada en tiempo
+        sliding-window-size: 5                # Ventana de 5 segundos
+        minimum-number-of-calls: 3            # Se necesitan al menos 3 llamadas para evaluar
+        failure-rate-threshold: 100           # Umbral de fallos al 100% para abrir el circuito (3 de 3 errores)
+      circuit-breaker-count:
+        base-config: default
+        sliding-window-type: COUNT_BASED      # Ventana basada en error
+        sliding-window-size: 5                # Ventana de 5 segundos
+        minimum-number-of-calls: 1            # Se necesitan al menos 1 llamadas para evaluar
+        failure-rate-threshold: 100           # Umbral de fallos al 100% para abrir el circuito (3 de 3 errores)
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health, circuitbreakers
+  health:
+    circuitbreakers:
+      enabled: true
